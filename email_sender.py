@@ -24,11 +24,11 @@ from pathlib import Path
 
 def send_email(from_email, subject, message):
     email = EmailMessage()
-    email['from'] = from_email
-    email['to'] = 'katie.wynn@pop.belmont.edu'
+    email['from'] = "Nik's Website Notifier"
+    email['to'] = 'nik.butalid@pop.belmont.edu'
     email['subject'] = subject
 
-    email.set_content(f'Hello, you just received a message from Nik\'s website:\n\n{message}')
+    email.set_content(f'Hello, you just received a message from Nik\'s website.\n\n{from_email} said:\n"{message}"')
 
     with smtplib.SMTP(host='smtp.gmail.com', port=587) as smtp:
         smtp.ehlo()

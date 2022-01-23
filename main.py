@@ -2,7 +2,13 @@ import os
 import csv
 from datetime import datetime
 from flask import Flask, render_template, send_from_directory, request, redirect
-from Scripts.email_sender import send_email
+from sqlalchemy.testing.schema import Table
+
+from email_sender import send_email
+import pyodbc
+import sqlalchemy as sal
+from sqlalchemy import create_engine, MetaData, insert
+import pandas as pd
 
 # had to use '$env:FLASK_APP = "main.py' and 'flask run'
 
@@ -16,6 +22,7 @@ def get_page(page_name):
 
 @app.route('/')
 def home_page():
+    # send_sql_query()
     return render_template('index.html')
 
 
@@ -25,7 +32,8 @@ def submit_form():
         try:
             data = request.form.to_dict()
             write_to_csv(data)
-            # send_email(data['email'], data['subject'], data['message'])
+            send_sql_query(data)
+            send_email(data['email'], data['subject'], data['message'])
             return redirect('thank_you.html')
         except:
             return 'did not save to database'
@@ -44,37 +52,26 @@ def write_to_csv(data):
         csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow(
             [data['email'], data['subject'], data['message'], datetime.now().strftime("%m/%d/%Y %H:%M")])
-#:
-# @app.route('/index.html')
-# def index():
-#     return render_template('index.html')
-#
-#
-# @app.route('/')
-# def home():
-#     return render_template('index.html')
-#
-#
-# @app.route('/about.html')
-# def about():
-#     return render_template('about.html')
-#
-#
-# @app.route('/components.html')
-# def components():
-#     return render_template('components.html')
-#
-#
-# @app.route('/contact.html')
-# def contact():
-#     return render_template('contact.html')
-#
-#
-# @app.route('/work.html')
-# def work():
-#     return render_template('work.html')
-#
-#
-# @app.route('/works.html')
-# def works():
-#     return render_template('works.html')
+
+
+def send_sql_query(data):
+    Server = "DESKTOP-O22NV3Q\SQLEXPRESS"
+    Database = "AdventureWorksLT2019"
+    User = "sa"
+    Password = "nikolas1"
+    Port = "1433"
+    user_email = data['email']
+    user_subject = data['subject']
+    user_message = data['message']
+    user_time = datetime.now().strftime("%m/%d/%Y %I:%M %p")
+
+    engine = create_engine(
+        f"mssql+pyodbc://{User}:{Password}@{Server}:{Port}/{Database}?driver=ODBC+Driver+17+for+SQL+Server")
+
+    metadata_obj = MetaData()
+    example_table = Table("Website", metadata_obj, autoload_with=engine)
+    stmt = insert(example_table).values(email=user_email, subject=user_subject,
+                                        message=user_message, time=user_time)
+
+    with engine.connect() as conn:
+        conn.execute(stmt)
